@@ -64,7 +64,7 @@ function AutocompleteInput({ value, onChange, suggestions }) {
   )
 }
 
-export default function DecisionPanel({ url, urls, userName, onSave, onCascade, onNext, onPrev }) {
+export default function DecisionPanel({ url, urls, userName, onSave, onCascade, onNext, onNextUndecided, onPrev }) {
   const [decision, setDecision] = useState(null)
   const [destination, setDestination] = useState('')
   const [notes, setNotes] = useState('')
@@ -314,7 +314,8 @@ export default function DecisionPanel({ url, urls, userName, onSave, onCascade, 
           </div>
           <div className="decision-nav">
             {onPrev && <button onClick={onPrev}>← Prev</button>}
-            <button onClick={onNext}>Next undecided →</button>
+            <button onClick={onNext}>Next →</button>
+            <button onClick={onNextUndecided}>Next undecided →</button>
           </div>
         </div>
 

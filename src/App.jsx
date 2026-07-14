@@ -83,6 +83,12 @@ export default function App() {
     if (next) setSelectedId(next.id)
   }
 
+  function goToNext(fromId) {
+    const sorted = sortedUrls()
+    const idx = sorted.findIndex(u => u.id === fromId)
+    if (idx < sorted.length - 1) setSelectedId(sorted[idx + 1].id)
+  }
+
   function goToPrev(fromId) {
     const sorted = sortedUrls()
     const idx = sorted.findIndex(u => u.id === fromId)
@@ -248,7 +254,8 @@ export default function App() {
             userName={userName}
             onSave={handleSave}
             onCascade={handleCascade}
-            onNext={() => goToNextUndecided(selectedId)}
+            onNext={() => goToNext(selectedId)}
+            onNextUndecided={() => goToNextUndecided(selectedId)}
             onPrev={() => goToPrev(selectedId)}
           />
         </div>
