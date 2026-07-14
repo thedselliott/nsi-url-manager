@@ -121,10 +121,6 @@ export default function App() {
 
     if (error) { setError(error.message); return }
     setUrls(prev => prev.map(u => u.id === id ? data : u))
-    // Auto-advance only for Keep — Delete and Redirect/Merge stay put so user sees confirmation
-    if (decision === 'keep') {
-      goToNextUndecided(id)
-    }
   }
 
   // ── Cascade decision to all undecided children ─────────────────────────────
