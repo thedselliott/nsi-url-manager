@@ -101,11 +101,17 @@ export default function DecisionPanel({ url, urls, userName, onSave, onCascade, 
     setDestConfirmed(true)
   }
 
-  // Quick-save for K and D (no destination needed)
+  // Quick-save for K and D (no destination needed); clicking active button clears it
   function handleDecisionClick(def) {
+    if (decision === def.key) {
+      setDecision(null)
+      setDestination('')
+      setDestConfirmed(false)
+      onSave({ id: url.id, decision: null, destination: null, notes: notes.trim() || null })
+      return
+    }
     setDecision(def.key)
     if (!def.needsDest) {
-      // Save immediately
       onSave({
         id: url.id,
         decision: def.key,
