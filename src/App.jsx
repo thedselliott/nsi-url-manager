@@ -109,11 +109,11 @@ export default function App() {
     const { data, error } = await supabase
       .from('urls')
       .update({
-        decision,
+        decision: decision || null,
         destination: destination || null,
         notes: notes || null,
-        decided_by: userName,
-        decided_at: new Date().toISOString(),
+        decided_by: decision ? userName : null,
+        decided_at: decision ? new Date().toISOString() : null,
       })
       .eq('id', id)
       .select()
@@ -121,10 +121,41 @@ export default function App() {
 
     if (error) { setError(error.message); return }
     setUrls(prev => prev.map(u => u.id === id ? data : u))
-    // Move to next undecided after any Keep or Delete
-    if (decision === 'keep' || decision === 'delete') {
+    // Auto-advance only for Keep — Delete and Redirect/Merge stay put so user sees confirmation
+    if (decision === 'keep') {
       goToNextUndecided(id)
     }
+  }
+
+  // ── Cascade decision to all undecided children ─────────────────────────────
+  async function handleCascade(parentUrl, decision) {
+    const children = urls.filter(u =>
+      u.id !== parentUrl.id &&
+      u.path.startsWith(parentUrl.path) &&
+      u.is_html &&
+      !u.path.match(/\.[a-z]{2,4}\/?$/i) &&
+      !u.decision
+    )
+    if (!children.length) return
+
+    const now = new Date().toISOString()
+    const results = await Promise.all(
+      children.map(child =>
+        supabase.from('urls').update({
+          decision,
+          destination: null,
+          notes: null,
+          decided_by: userName,
+          decided_at: now,
+        }).eq('id', child.id).select().single()
+      )
+    )
+
+    const updated = results.filter(r => !r.error).map(r => r.data)
+    setUrls(prev => prev.map(u => {
+      const match = updated.find(upd => upd.id === u.id)
+      return match || u
+    }))
   }
 
   // ── Keyboard shortcuts ──────────────────────────────────────────────────────
@@ -142,7 +173,7 @@ export default function App() {
         e.preventDefault()
         handleSave({ id: selected.id, decision: 'delete', destination: null, notes: selected.notes })
       }
-      if (e.key === 'Tab') {
+      if (e.key === 'n' || e.key === 'N') {
         e.preventDefault()
         goToNextUndecided(selectedId)
       }
@@ -177,7 +208,8 @@ export default function App() {
     )
   }
 
-  const decided = urls.filter(u => u.decision).length
+  const htmlUrls = urls.filter(u => u.is_html)
+  const decided = htmlUrls.filter(u => u.decision).length
   const selectedUrl = urls.find(u => u.id === selectedId) || null
 
   return (
@@ -186,12 +218,10 @@ export default function App() {
         <div className="app-header-left">
           <h1 className="app-title">URL Audit</h1>
           <span className="project-badge">{project.name}</span>
-          <span className="project-badge" style={{ fontFamily: 'monospace', letterSpacing: '.06em' }}>
-            {project.slug}
-          </span>
+
         </div>
         <div className="app-header-right">
-          <ProgressBar decided={decided} total={urls.length} />
+          <ProgressBar decided={decided} total={htmlUrls.length} />
           <ExportButton urls={urls} projectName={project.name} />
           <button className="btn-ghost" onClick={() => applyProject(null)}>
             Switch Project
@@ -221,6 +251,7 @@ export default function App() {
             urls={urls}
             userName={userName}
             onSave={handleSave}
+            onCascade={handleCascade}
             onNext={() => goToNextUndecided(selectedId)}
             onPrev={() => goToPrev(selectedId)}
           />

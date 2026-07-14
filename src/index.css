@@ -371,6 +371,34 @@ label { display: block; font-size: 12px; font-weight: 600; color: var(--text-2);
 .destination-block h4 { font-size: 13px; font-weight: 600; }
 .destination-hint { font-size: 12px; color: var(--text-3); margin-top: 2px; }
 
+.deletion-confirmed {
+  display: flex; align-items: flex-start; gap: 12px;
+  padding: 14px 16px;
+  background: var(--delete-bg);
+  border: 1px solid var(--delete-border);
+  border-radius: var(--radius-sm);
+}
+.deletion-confirmed-icon { font-size: 20px; flex-shrink: 0; margin-top: 1px; }
+.deletion-confirmed-text { flex: 1; }
+.deletion-confirmed-text strong { color: var(--delete-text); font-size: 13px; }
+.deletion-confirmed-text p { font-size: 12px; color: var(--delete-text); opacity: .8; margin-top: 3px; line-height: 1.5; }
+
+.destination-confirmed {
+  display: flex; align-items: center; justify-content: space-between; gap: 12px;
+  padding: 10px 14px;
+  background: var(--keep-bg);
+  border: 1px solid var(--keep-border);
+  border-radius: var(--radius-sm);
+}
+.destination-confirmed-value {
+  display: flex; align-items: center; gap: 8px; min-width: 0;
+}
+.destination-confirmed-icon { color: var(--keep); font-size: 14px; flex-shrink: 0; }
+.destination-confirmed-url {
+  font-family: monospace; font-size: 12px; color: var(--keep-text);
+  word-break: break-all;
+}
+
 .notes-block {
   display: flex; flex-direction: column; gap: 4px;
 }
@@ -469,6 +497,23 @@ label { display: block; font-size: 12px; font-weight: 600; color: var(--text-2);
   font-size: 13px; font-weight: 500;
 }
 .export-btn:hover { background: rgba(255,255,255,.15); color: #fff; }
+
+/* Children warning */
+.children-warning {
+  display: flex; align-items: flex-start; justify-content: space-between; gap: 16px;
+  padding: 14px 16px;
+  background: #fffbeb;
+  border: 1px solid #fde68a;
+  border-radius: var(--radius-sm);
+}
+.children-warning-text { flex: 1; }
+.children-warning-text strong { font-size: 13px; color: #78350f; }
+.children-warning-text p { font-size: 12px; color: #92400e; margin-top: 4px; line-height: 1.5; }
+.children-warning-list {
+  margin-top: 6px; padding-left: 16px;
+  font-size: 11px; font-family: monospace; color: #92400e;
+  display: flex; flex-direction: column; gap: 2px;
+}
 
 /* Autocomplete wrapper */
 .autocomplete-wrap { position: relative; }

@@ -4,16 +4,14 @@ import TreeNode from './TreeNode'
 
 export default function UrlTree({ urls, selectedId, onSelect }) {
   const [search, setSearch] = useState('')
-  const [htmlOnly, setHtmlOnly] = useState(true)
   const [decisionFilter, setDecisionFilter] = useState('all') // 'all' | 'undecided' | 'decided'
 
   const filteredUrls = useMemo(() => {
-    let result = urls
-    if (htmlOnly) result = result.filter(u => u.is_html)
+    let result = urls.filter(u => u.is_html)
     if (decisionFilter === 'undecided') result = result.filter(u => !u.decision)
     if (decisionFilter === 'decided') result = result.filter(u => !!u.decision)
     return result
-  }, [urls, htmlOnly, decisionFilter])
+  }, [urls, decisionFilter])
 
   const tree = useMemo(() => buildTree(filteredUrls), [filteredUrls])
 
@@ -22,8 +20,6 @@ export default function UrlTree({ urls, selectedId, onSelect }) {
     return filterTree(tree, search.trim())
   }, [tree, search])
 
-  const htmlCount = urls.filter(u => u.is_html).length
-  const totalCount = urls.length
   const undecidedCount = filteredUrls.filter(u => !u.decision).length
 
   return (
@@ -40,14 +36,6 @@ export default function UrlTree({ urls, selectedId, onSelect }) {
         </div>
 
         <div className="tree-filters">
-          <button
-            className={`tree-filter-btn ${htmlOnly ? 'active' : ''}`}
-            onClick={() => setHtmlOnly(v => !v)}
-            title={htmlOnly ? `Showing ${htmlCount} HTML pages. Click to show all ${totalCount} resources.` : 'Click to show HTML pages only'}
-          >
-            HTML only
-          </button>
-
           <button
             className={`tree-filter-btn ${decisionFilter === 'undecided' ? 'active' : ''}`}
             onClick={() => setDecisionFilter(f => f === 'undecided' ? 'all' : 'undecided')}
@@ -73,7 +61,7 @@ export default function UrlTree({ urls, selectedId, onSelect }) {
               depth={0}
               selectedId={selectedId}
               onSelect={onSelect}
-              htmlOnly={htmlOnly}
+  
               searchQuery={search}
             />
           ))
@@ -91,7 +79,7 @@ export default function UrlTree({ urls, selectedId, onSelect }) {
             depth={0}
             selectedId={selectedId}
             onSelect={onSelect}
-            htmlOnly={htmlOnly}
+
             searchQuery={search}
           />
         )}

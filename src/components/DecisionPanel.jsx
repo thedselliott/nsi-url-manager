@@ -64,11 +64,12 @@ function AutocompleteInput({ value, onChange, suggestions }) {
   )
 }
 
-export default function DecisionPanel({ url, urls, userName, onSave, onNext, onPrev }) {
+export default function DecisionPanel({ url, urls, userName, onSave, onCascade, onNext, onPrev }) {
   const [decision, setDecision] = useState(null)
   const [destination, setDestination] = useState('')
   const [notes, setNotes] = useState('')
   const [saving, setSaving] = useState(false)
+  const [destConfirmed, setDestConfirmed] = useState(false)
 
   // Sync state when selected URL changes
   useEffect(() => {
@@ -76,10 +77,13 @@ export default function DecisionPanel({ url, urls, userName, onSave, onNext, onP
       setDecision(url.decision || null)
       setDestination(url.destination || '')
       setNotes(url.notes || '')
+      // If URL already has a saved destination, show it as confirmed
+      setDestConfirmed(!!(url.destination))
     }
   }, [url?.id])
 
   const activeDef = DECISIONS.find(d => d.key === decision)
+  const showDeleteConfirmation = decision === 'delete' && url?.decision === 'delete'
 
   async function handleSave(overrideDecision) {
     const d = overrideDecision || decision
@@ -94,6 +98,7 @@ export default function DecisionPanel({ url, urls, userName, onSave, onNext, onP
       notes: notes.trim() || null,
     })
     setSaving(false)
+    setDestConfirmed(true)
   }
 
   // Quick-save for K and D (no destination needed)
@@ -170,31 +175,111 @@ export default function DecisionPanel({ url, urls, userName, onSave, onNext, onP
           ))}
         </div>
 
+        {/* Deletion confirmation */}
+        {showDeleteConfirmation && (
+          <div className="deletion-confirmed">
+            <div className="deletion-confirmed-icon">🗑️</div>
+            <div className="deletion-confirmed-text">
+              <strong>Marked for deletion</strong>
+              <p>This page will be removed. If visitors land here they'll get a 404 unless you set up a redirect elsewhere. Use the Notes field below to record any context.</p>
+            </div>
+            <button
+              className="btn btn-outline"
+              style={{ fontSize: 12, padding: '4px 10px', flexShrink: 0 }}
+              onClick={() => {
+                setDecision(null)
+                onSave({ id: url.id, decision: null, destination: null, notes: notes.trim() || null })
+              }}
+            >
+              Undo
+            </button>
+          </div>
+        )}
+
         {/* Destination field — for Redirect and Merge */}
         {activeDef?.needsDest && (
           <div className="destination-block">
             <h4>
-              {decision === 'redirect' ? 'Redirect destination' : 'Merge into'}
+              {decision === 'redirect' ? 'Where should this URL redirect to?' : 'Which page should this content merge into?'}
             </h4>
-            <AutocompleteInput
-              value={destination}
-              onChange={setDestination}
-              suggestions={urls.filter(u => u.id !== url.id)}
-            />
-            <div className="destination-hint">
-              Type a URL from the list above or any destination — including pages that don't exist yet.
-            </div>
 
-            <button
-              className="btn btn-primary"
-              style={{ alignSelf: 'flex-start', marginTop: 4 }}
-              disabled={!destination.trim() || saving}
-              onClick={() => handleSave()}
-            >
-              {saving ? 'Saving…' : `Confirm ${decision === 'redirect' ? 'Redirect' : 'Merge'} →`}
-            </button>
+            {destConfirmed && destination ? (
+              <div className="destination-confirmed">
+                <div className="destination-confirmed-value">
+                  <span className="destination-confirmed-icon">✓</span>
+                  <span className="destination-confirmed-url">{destination}</span>
+                </div>
+                <button
+                  className="btn btn-outline"
+                  style={{ fontSize: 12, padding: '4px 10px' }}
+                  onClick={() => setDestConfirmed(false)}
+                >
+                  Edit
+                </button>
+              </div>
+            ) : (
+              <>
+                <AutocompleteInput
+                  value={destination}
+                  onChange={setDestination}
+                  suggestions={urls.filter(u => u.id !== url.id)}
+                />
+                <div className="destination-hint">
+                  Start typing a page title or path to search existing URLs — or paste any destination, including pages that don't exist yet.
+                </div>
+                <button
+                  className="btn btn-primary"
+                  style={{ alignSelf: 'flex-start', marginTop: 4 }}
+                  disabled={!destination.trim() || saving}
+                  onClick={() => handleSave()}
+                >
+                  {saving ? 'Saving…' : `Confirm ${decision === 'redirect' ? 'Redirect' : 'Merge'} →`}
+                </button>
+              </>
+            )}
           </div>
         )}
+
+        {/* Children warning */}
+        {url.decision && url.decision !== 'keep' && (() => {
+          const undecidedChildren = urls.filter(u =>
+            u.id !== url.id &&
+            u.path.startsWith(url.path) &&
+            u.is_html &&
+            !u.path.match(/\.[a-z]{2,4}\/?$/i) &&
+            !u.decision
+          )
+          if (!undecidedChildren.length) return null
+          return (
+            <div className="children-warning">
+              <div className="children-warning-text">
+                <strong>⚠️ {undecidedChildren.length} child page{undecidedChildren.length !== 1 ? 's' : ''} still need decisions</strong>
+                <p>
+                  {url.decision === 'delete'
+                    ? 'These pages live under this URL. You can mark them all for deletion at once, or decide each one individually.'
+                    : 'These pages live under this URL and will still need individual decisions.'}
+                </p>
+                <ul className="children-warning-list">
+                  {undecidedChildren.slice(0, 5).map(c => (
+                    <li key={c.id}>{c.path}</li>
+                  ))}
+                  {undecidedChildren.length > 5 && (
+                    <li>…and {undecidedChildren.length - 5} more</li>
+                  )}
+                </ul>
+              </div>
+              {url.decision === 'delete' && (
+                <button
+                  className="btn btn-outline"
+                  style={{ fontSize: 12, padding: '6px 12px', flexShrink: 0, alignSelf: 'flex-start', color: 'var(--delete-text)', borderColor: 'var(--delete-border)' }}
+                  onClick={() => onCascade(url, 'delete')}
+                >
+                  Mark all {undecidedChildren.length} as Delete
+                </button>
+              )}
+            </div>
+          )
+        })()}
 
         {/* Notes */}
         <div className="notes-block">
@@ -219,7 +304,7 @@ export default function DecisionPanel({ url, urls, userName, onSave, onNext, onP
             <span><kbd>R</kbd> Redirect</span>
             <span><kbd>D</kbd> Delete</span>
             <span><kbd>M</kbd> Merge</span>
-            <span><kbd>Tab</kbd> Next undecided</span>
+            <span><kbd>N</kbd> Next undecided</span>
           </div>
           <div className="decision-nav">
             {onPrev && <button onClick={onPrev}>← Prev</button>}

@@ -12,11 +12,9 @@ export default function TreeNode({ node, depth, selectedId, onSelect, htmlOnly, 
 
   const hasChildren = node.children.length > 0
   const isSelected = node.urlData && node.urlData.id === selectedId
-  const isClickable = !!node.urlData
 
-  function handleRowClick(e) {
-    if (!isClickable) return
-    onSelect(node.urlData.id)
+  function handleRowClick() {
+    if (node.urlData) onSelect(node.urlData.id)
   }
 
   function handleToggle(e) {
@@ -24,15 +22,31 @@ export default function TreeNode({ node, depth, selectedId, onSelect, htmlOnly, 
     setExpanded(v => !v)
   }
 
-  // Determine if this is a "virtual" folder node (path in tree but no URL data)
-  const isFolder = !node.urlData
+  // Virtual folder — no URL, just render children at the same depth
+  if (!node.urlData) {
+    return (
+      <>
+        {node.children.map(child => (
+          <TreeNode
+            key={child.path}
+            node={child}
+            depth={depth}
+            selectedId={selectedId}
+            onSelect={onSelect}
+            htmlOnly={htmlOnly}
+            searchQuery={searchQuery}
+          />
+        ))}
+      </>
+    )
+  }
 
   return (
     <div className="tree-node">
       <div
-        className={`tree-node-row ${isSelected ? 'selected' : ''} ${isFolder ? 'no-data' : ''}`}
+        className={`tree-node-row ${isSelected ? 'selected' : ''}`}
         onClick={handleRowClick}
-        title={node.urlData?.url || node.path}
+        title={node.urlData.url}
       >
         {/* Indentation */}
         <div className="tree-node-indent" style={{ width: depth * INDENT_PX }} />
@@ -46,19 +60,14 @@ export default function TreeNode({ node, depth, selectedId, onSelect, htmlOnly, 
           <span className="tree-node-spacer" />
         )}
 
-        {/* Status dot — only for actual URL nodes */}
+        {/* Status dot */}
         <span className="tree-node-dot">
-          {node.urlData
-            ? <DecisionDot decision={node.urlData.decision} />
-            : <span style={{ width: 8, display: 'inline-block' }} />
-          }
+          <DecisionDot decision={node.urlData.decision} />
         </span>
 
         {/* Label */}
         <div className="tree-node-text">
-          <div className="tree-node-title" style={{ opacity: isFolder ? 0.5 : 1, fontStyle: isFolder ? 'italic' : 'normal' }}>
-            {node.label || node.segment}
-          </div>
+          <div className="tree-node-title">{node.label || node.segment}</div>
           <div className="tree-node-url">{node.path}</div>
         </div>
       </div>
